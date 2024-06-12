@@ -52,6 +52,15 @@ public class AuthenticationEndpoints : EndpointGroup
             _ => null,
         };
         
+        // If the platform could not be determined, fail the login
+        if (platform == null)
+        {
+            database.AddLoginFailNotification("The server could not determine what platform you were trying to connect from.", user);
+            context.Logger.LogWarning(BunkumCategory.Authentication, $"Could not determine platform from ticket.\n" +
+                                                                     $"Missing IssuerID: {ticket.IssuerId}");
+            return null;
+        }
+        
         GameUser? user = database.GetUserByUsername(ticket.Username);
         if (user == null)
         {
@@ -85,18 +94,27 @@ public class AuthenticationEndpoints : EndpointGroup
                     database.VerifyUserEmail(user);
                 }
             }
-            else
+            
+            // If the normal registration didn't hit any results, then create a guest user (if that is enabled)
+            if (config.AllowGuestUsers)
+                user ??= database.CreateGuestUser(ticket.Username, platform, context.RemoteIp());
+            
+            // If we couldn't find a user
+            if(user == null)
             {
-                context.Logger.LogWarning(BunkumCategory.Authentication, $"Rejecting {ticket.Username}'s login because there was no matching username");
+                context.Logger.LogWarning(BunkumCategory.Authentication,
+                    $"Rejecting {ticket.Username}'s login because there was no matching user or registration by that name, and guest users are disabled.");
                 return null;
             }
         }
+        // Reject logins from banned users
         else if (user.Role == GameUserRole.Banned)
         {
             context.Logger.LogWarning(BunkumCategory.Authentication, $"Rejecting {user}'s login because they are banned");
             return null;
         }
 
+        // If we are in maintenance mode, only allow admins
         if (config.MaintenanceMode && user.Role != GameUserRole.Admin)
         {
             context.Logger.LogWarning(BunkumCategory.Authentication, $"Rejecting {user}'s login because server is in maintenance mode");
@@ -104,8 +122,10 @@ public class AuthenticationEndpoints : EndpointGroup
         }
 
         bool ticketVerified = false;
+        // If enabled, try to verify the ticket
         if (config.UseTicketVerification)
         {
+            // If the platform of the ticket is not allowed by the user, then block the login
             if ((platform is TokenPlatform.PS3 or TokenPlatform.Vita or TokenPlatform.PSP && !user.PsnAuthenticationAllowed) ||
                 (platform is TokenPlatform.RPCS3 && !user.RpcnAuthenticationAllowed))
             {
@@ -114,7 +134,9 @@ public class AuthenticationEndpoints : EndpointGroup
                 return null;
             }
             
+            // Try to verify the ticket
             ticketVerified = VerifyTicket(context, (MemoryStream)body, ticket);
+            // If the ticket failed to verify, block the login
             if (!ticketVerified)
             {
                 SendVerificationFailureNotification(database, user, config);
@@ -126,6 +148,7 @@ public class AuthenticationEndpoints : EndpointGroup
             }
         }
         
+        // If IP auth is allowed and the ticket failed to verify, then try to use ip auth
         if (config.AllowUsersToUseIpAuthentication && !ticketVerified)
         {
             if (!HandleIpAuthentication(context, user, database, !config.UseTicketVerification))
@@ -137,20 +160,14 @@ public class AuthenticationEndpoints : EndpointGroup
 
         TokenGame? game = null;
 
-        // check if we're connecting from a beta build
+        // Check if we're connecting from a beta build
         bool parsedBeta = byte.TryParse(context.QueryString.Get("beta"), out byte isBeta);
         if (parsedBeta && isBeta == 1) game = TokenGame.BetaBuild;
 
+        // Try to get the game from the title ID
         game ??= TokenGameUtility.FromTitleId(ticket.TitleId);
 
-        if (platform == null)
-        {
-            database.AddLoginFailNotification("The server could not determine what platform you were trying to connect from.", user);
-            context.Logger.LogWarning(BunkumCategory.Authentication, $"Could not determine platform from ticket.\n" +
-                                                                    $"Missing IssuerID: {ticket.IssuerId}");
-            return null;
-        }
-
+        // If we could not determine what game you are connecting with, send an error to the user.
         if (game == null)
         {
             database.AddLoginFailNotification("The server could not determine what game you were trying to connect from.", user);

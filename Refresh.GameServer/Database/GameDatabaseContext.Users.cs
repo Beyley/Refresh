@@ -3,6 +3,7 @@ using MongoDB.Bson;
 using Refresh.GameServer.Authentication;
 using Refresh.GameServer.Endpoints.ApiV3.DataTypes.Request;
 using Refresh.GameServer.Types;
+using Refresh.GameServer.Types.Activity;
 using Refresh.GameServer.Types.Levels;
 using Refresh.GameServer.Types.Photos;
 using Refresh.GameServer.Types.Relations;
@@ -275,7 +276,12 @@ public partial class GameDatabaseContext // Users
         this.RevokeAllTokensForUser(user, TokenType.Game);
     }
 
-    public void DeleteUser(GameUser user)
+    /// <summary>
+    /// Deletes a user from the database
+    /// </summary>
+    /// <param name="user">The user to delete</param>
+    /// <param name="hard">Whether to hard delete (delete the user object entirely) or soft delete (wipe all information associated with the user)</param>
+    public void DeleteUser(GameUser user, bool hard)
     {
         const string deletedReason = "This user's account has been deleted.";
         
@@ -312,10 +318,19 @@ public partial class GameDatabaseContext // Users
             this._realm.RemoveRange(this._realm.All<QueueLevelRelation>().Where(r => r.User == user));
             this._realm.RemoveRange(this._realm.All<GamePhoto>().Where(p => p.Publisher == user));
 
+            // Remove all events created by this user
+            this._realm.RemoveRange(this._realm.All<Event>().Where(e => e.User == user || e.EventId == user.UserId));
+            
             foreach (GameLevel level in this._realm.All<GameLevel>().Where(l => l.Publisher == user))
             {
+                // Remove all events relating to their levels
+                this._realm.RemoveRange(this._realm.All<Event>().Where(e => e._StoredDataType == (int)EventDataType.Level && e.StoredSequentialId == level.LevelId));
+                
                 level.Publisher = null;
             }
+            
+            if(hard)
+                this._realm.Remove(user);
         });
     }
 
@@ -396,4 +411,12 @@ public partial class GameDatabaseContext // Users
                 user.ProfileVisibility = settings.ProfileVisibility.Value;
         });            
     }
+    
+    public void SetAccountCreationCode(GameUser user, string? code)
+    {
+        this._realm.Write(() =>
+        {
+            user.AccountCreationCode = code;
+        });
+    } 
 }

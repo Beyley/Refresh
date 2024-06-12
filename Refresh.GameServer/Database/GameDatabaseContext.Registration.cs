@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using MongoDB.Bson;
 using Refresh.GameServer.Authentication;
 using Refresh.GameServer.Extensions;
+using Refresh.GameServer.Types.Roles;
 using Refresh.GameServer.Types.UserData;
 using Refresh.GameServer.Verification;
 
@@ -9,7 +10,7 @@ namespace Refresh.GameServer.Database;
 
 public partial class GameDatabaseContext // Registration
 {
-    public GameUser CreateUser(string username, string emailAddress, bool skipChecks = false)
+    public GameUser CreateUser(string username, string? emailAddress, bool skipChecks = false)
     {
         if (!skipChecks)
         {
@@ -20,12 +21,12 @@ public partial class GameDatabaseContext // Registration
             if (this.IsUsernameTaken(username))
                 throw new InvalidOperationException("Cannot create a user with an existing username");
         
-            if (this.IsEmailTaken(emailAddress))
+            if (emailAddress != null && this.IsEmailTaken(emailAddress))
                 throw new InvalidOperationException("Cannot create a user with an existing email address");
         }
 
-        emailAddress = emailAddress.ToLowerInvariant();
-        
+        emailAddress = emailAddress?.ToLowerInvariant();
+
         GameUser user = new()
         {
             Username = username,
@@ -235,5 +236,57 @@ public partial class GameDatabaseContext // Registration
     public bool IsUserDisallowed(string username)
     {
         return this._realm.Find<DisallowedUser>(username) != null;
+    }
+    
+    public GameUser CreateGuestUser(string username, TokenPlatform? platform, string ip)
+    {
+        GameUser? user = this.GetUserByUsername(username);
+
+        if (user != null) 
+            return user;
+        
+        // Create a new user with that username
+        user = this.CreateUser(username, null);
+            
+        // Mark them as a guest
+        this.SetUserRole(user, GameUserRole.Guest);
+
+        // Enable the authentication method in use for this login
+        this._realm.Write(() =>
+        {
+            // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+            switch (platform)
+            {
+                case TokenPlatform.PS3:
+                case TokenPlatform.Vita:
+                    user.PsnAuthenticationAllowed = true;
+                    break;
+                case TokenPlatform.RPCS3:
+                    user.RpcnAuthenticationAllowed = true;
+                    break;
+                // If we don't know the platform, then enable IP auth
+                // TODO: we should verify the ticket and also enable IP auth if ticket verification fails
+                case null:
+                    user.AllowIpAuthentication = true;
+                    user.CurrentVerifiedIp = ip;
+                    break;
+            }
+        });
+        
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        const int length = 6;
+        
+        // Set a random account creation code
+        this.SetAccountCreationCode(user, new string(Enumerable.Repeat(chars, length)
+            .Select(s => s[Random.Shared.Next(s.Length)]).ToArray()));
+        
+        // Add a notification to tell the user to activate the account on the website 
+        this.AddNotification(
+            "Guest User Notice",
+            $"You are currently playing as a guest user! Please activate your account on our website using the code {user.AccountCreationCode}. Until you do so, you will not be able to upload levels or interact with the community.",
+            user
+        );
+        
+        return user;
     }
 }

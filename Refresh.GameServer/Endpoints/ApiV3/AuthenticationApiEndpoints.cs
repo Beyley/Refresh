@@ -322,7 +322,7 @@ public class AuthenticationApiEndpoints : EndpointGroup
     [DocSummary("Deletes your own account. This action is non-reversible.")]
     public ApiOkResponse DeleteMyAccount(RequestContext context, GameUser user, GameDatabaseContext database)
     {
-        database.DeleteUser(user);
+        database.DeleteUser(user, false);
         return new ApiOkResponse();
     }
 }

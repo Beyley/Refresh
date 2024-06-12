@@ -77,16 +77,25 @@ public class AnnouncementEndpoints : EndpointGroup
     [SuppressMessage("ReSharper", "RedundantAssignment")]
     public string Announce(RequestContext context, GameServerConfig config, GameUser user, GameDatabaseContext database, Token token)
     {
-        if (user.Role == GameUserRole.Restricted)
+        // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
+        switch (user.Role)
         {
-            return """
-                   Your account is currently in restricted mode.
-                   
-                   You can still play, but you won't be able to publish levels, post comments, or otherwise interact with the community.
-                   For more information, please contact an administrator.
-                   """;
+            case GameUserRole.Restricted:
+                return """
+                       Your account is currently in restricted mode.
+
+                       You can still play, but you won't be able to publish levels, post comments, or otherwise interact with the community.
+                       For more information, please contact an administrator.
+                       """;
+            case GameUserRole.Guest:
+                return $"""
+                        You are current playing in a guest account.
+
+                        You can still play, but you won't be able to publish levels, comments, or otherwise interact with the community.
+                        To activate your account, go on our website and activate your account using the code {user.AccountCreationCode}.
+                        """;
         }
-        
+
         // ReSharper disable once JoinDeclarationAndInitializer (makes it easier to follow)
         bool appended;
         StringBuilder output = new();

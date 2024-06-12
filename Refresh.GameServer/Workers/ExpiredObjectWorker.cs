@@ -2,6 +2,7 @@ using Bunkum.Core.Storage;
 using NotEnoughLogs;
 using Refresh.GameServer.Authentication;
 using Refresh.GameServer.Database;
+using Refresh.GameServer.Types.Roles;
 using Refresh.GameServer.Types.UserData;
 
 namespace Refresh.GameServer.Workers;
@@ -30,9 +31,15 @@ public class ExpiredObjectWorker : IWorker
         foreach (Token token in database.GetAllTokens().Items)
         {
             if (!database.IsTokenExpired(token)) continue;
+
+            GameUser user = token.User;
             
             logger.LogInfo(RefreshContext.Worker, $"Removed {token.User}'s {token.TokenType} token since it has expired {DateTimeOffset.Now - token.ExpiresAt} ago");
             database.RevokeToken(token);
+
+            // After a guest user's token expires, we fully delete the user
+            if (user.Role == GameUserRole.Guest) 
+                database.DeleteUser(user, true);
         }
     }
 }

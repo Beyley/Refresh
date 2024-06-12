@@ -157,7 +157,7 @@ public class AdminUserApiEndpoints : EndpointGroup
         GameUser? user = database.GetUserByUuid(uuid);
         if (user == null) return ApiNotFoundError.UserMissingError;
 
-        database.DeleteUser(user);
+        database.DeleteUser(user, false);
         return new ApiOkResponse();
     }
     
@@ -169,7 +169,7 @@ public class AdminUserApiEndpoints : EndpointGroup
         GameUser? user = database.GetUserByUsername(username);
         if (user == null) return ApiNotFoundError.UserMissingError;
 
-        database.DeleteUser(user);
+        database.DeleteUser(user, false);
         return new ApiOkResponse();
     }
 }

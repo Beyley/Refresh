@@ -122,6 +122,11 @@ public partial class GameUser : IRealmObject, IRateLimitUser
 
     // ReSharper disable once InconsistentNaming
     internal byte _Role { get; set; }
+    
+    /// <summary>
+    /// The code a guest user can use to turn their guest account into a full account.
+    /// </summary>
+    public string? AccountCreationCode { get; set; }
 
     public override string ToString() => $"{this.Username} ({this.Role})";
 

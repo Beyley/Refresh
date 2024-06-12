@@ -21,6 +21,10 @@ public enum GameUserRole : sbyte
     /// </summary>
     User = 0,
     /// <summary>
+    /// This user is a guest, may log in and play, but cannot do things such as publish levels or post comments until they complete the registration steps.
+    /// </summary>
+    Guest = -125,
+    /// <summary>
     /// A user with read-only permissions. May log in and play, but cannot do things such as publish levels or post comments.
     /// </summary>
     Restricted = -126,
