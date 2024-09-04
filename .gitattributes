@@ -1,3 +1,3 @@
-Refresh.GameServer/Resources/lbp3.txt linguist-vendored
-Refresh.GameServer/Resources/lbpv.txt linguist-vendored
-Refresh.Common/Resources/all_hashes.txt linguist-vendored
+Refresh.GameServer/Resources/lbp3.txt linguist-vendored -diff
+Refresh.GameServer/Resources/lbpv.txt linguist-vendored -diff
+Refresh.Common/Resources/all_hashes.txt linguist-vendored -diff
