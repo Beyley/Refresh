@@ -1,11 +1,19 @@
 ﻿using Bunkum.Core;
 using Bunkum.Core.Endpoints;
+using Bunkum.Core.Endpoints.Debugging;
 using Bunkum.Core.Responses;
+using Bunkum.Listener.Protocol;
 using Bunkum.Protocols.Http;
+using NotEnoughLogs;
+using Refresh.Common.Extensions;
 using Refresh.GameServer.Importing;
 using Refresh.GameServer.Types.Roles;
 using Refresh.GameServer.Types.Telemetry;
+using Refresh.GameServer.Types.Telemetry.Json;
+using Refresh.GameServer.Types.Telemetry.Json.Events;
 using Refresh.GameServer.Types.UserData;
+using TelemetryEvent = Refresh.GameServer.Types.Telemetry.TelemetryEvent;
+using TelemetryHeader = Refresh.GameServer.Types.Telemetry.TelemetryHeader;
 
 namespace Refresh.GameServer.Endpoints.Game;
 
@@ -417,6 +425,355 @@ public class TelemetryEndpoints : EndpointGroup
             }
         }
         
+        return OK;
+    }
+
+    [GameEndpoint("t2", HttpMethods.Post, ContentType.Json)]
+    [MinimumRole(GameUserRole.Restricted)]
+    public Response UploadJsonTelemetry(RequestContext context, JsonTelemetryEvents body, GameUser user)
+    {
+        foreach (JsonTelemetryEvent telemetryEvent in body.Events)
+        {
+            if (!Enum.TryParse((string)telemetryEvent.Data["event_type"]!, out JsonTelemetryEventType eventType))
+            {
+                context.Logger.LogWarning(
+                    RefreshContext.Telemetry,
+                    "Unhandled telemetry type {0}, data: {1}, custom data: {2}",
+                    telemetryEvent.Data["event_type"]!,
+                    telemetryEvent.Data.ToString(Formatting.None),
+                    telemetryEvent.CustomData?.ToString(Formatting.None) ?? "null"
+                );
+
+                continue;
+            }
+
+            switch (eventType)
+            {
+                case JsonTelemetryEventType.UserXpm:
+                {
+                    TelemetryUserXpmEvent data = telemetryEvent.Data.ToObject<TelemetryUserXpmEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got user experience telemetry event, current fps: {0}, avg fps: {1}", 1000.0 / data.CurMspf,
+                        1000.0 / data.AvgMspf);
+                    break;
+                }
+                case JsonTelemetryEventType.NetworkProfile:
+                {
+                    TelemetryNetworkProfileEvent data = telemetryEvent.Data.ToObject<TelemetryNetworkProfileEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got network profile event, nat type: {0}",
+                        data.NatType);
+                    break;
+                }
+                case JsonTelemetryEventType.UserProfile:
+                {
+                    TelemetryUserProfileEvent data = telemetryEvent.Data.ToObject<TelemetryUserProfileEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got user profile event, online ID: {0}, account ID: {1}", data.NpOnlineId, data.NpAccountId);
+                    break;
+                }
+                case JsonTelemetryEventType.FriendProfile:
+                {
+                    TelemetryFriendProfileEvent data = telemetryEvent.Data.ToObject<TelemetryFriendProfileEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got friend profile event, friends: {0}, blocked: {1}", string.Join(',', data.FriendList),
+                        string.Join(',', data.BlockList));
+                    break;
+                }
+                case JsonTelemetryEventType.DLCProfile:
+                {
+                    TelemetryDlcProfileEvent data = telemetryEvent.Data.ToObject<TelemetryDlcProfileEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got dlc profile event, sku: {0}",
+                        string.Join(',', data.Sku));
+                    break;
+                }
+                case JsonTelemetryEventType.GameStart:
+                {
+                    TelemetryGameStartEvent data = telemetryEvent.Data.ToObject<TelemetryGameStartEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got game start event, level id: {0}",
+                        data.LevelId);
+                    break;
+                }
+                case JsonTelemetryEventType.GameEnd:
+                {
+                    TelemetryGameEndEvent data = telemetryEvent.Data.ToObject<TelemetryGameEndEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got game end event, level id: {0}", data.LevelId);
+                    break;
+                }
+                case JsonTelemetryEventType.PlayerJoin:
+                {
+                    TelemetryPlayerJoinEvent data = telemetryEvent.Data.ToObject<TelemetryPlayerJoinEvent>()!;
+                    TelemetryPlayerJoinEventCustomData? customData =
+                        telemetryEvent.CustomData?.ToObject<TelemetryPlayerJoinEventCustomData>();
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got player join event, online id: {0}, how matched: {1}", data.NpOnlineId,
+                        customData?.HowMatched ?? "unknown");
+                    break;
+                }
+                case JsonTelemetryEventType.PlayerLeave:
+                {
+                    TelemetryPlayerLeaveEvent data = telemetryEvent.Data.ToObject<TelemetryPlayerLeaveEvent>()!;
+                    TelemetryPlayerLeaveEventCustomData? customData =
+                        telemetryEvent.CustomData?.ToObject<TelemetryPlayerLeaveEventCustomData>();
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got player leave event, online id: {0}, game time: {1}", data.NpOnlineId,
+                        customData?.GameTime ?? -1);
+                    break;
+                }
+                case JsonTelemetryEventType.ResourceError:
+                {
+                    TelemetryResourceErrorEvent data = telemetryEvent.Data.ToObject<TelemetryResourceErrorEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got resource error event, hash: {0}, guid: {1}",
+                        data.Hash, data.Guid);
+                    break;
+                }
+                case JsonTelemetryEventType.ChkPtHit:
+                {
+                    TelemetryCheckpointHitEvent data = telemetryEvent.Data.ToObject<TelemetryCheckpointHitEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got checkpoint hit event, respawn: {0}, checkpoint id: {1}", data.Respawn, data.CheckpointId);
+                    break;
+                }
+                case JsonTelemetryEventType.PinAchieve:
+                {
+                    TelemetryPinAchieveEvent data = telemetryEvent.Data.ToObject<TelemetryPinAchieveEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got pin achieve event, type: {0}, id: {1}",
+                        data.PinType, data.PinId);
+                    break;
+                }
+                case JsonTelemetryEventType.QuestAdded:
+                {
+                    TelemetryQuestAddedEvent data = telemetryEvent.Data.ToObject<TelemetryQuestAddedEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got quest added event, name: {0}",
+                        data.QuestName);
+                    break;
+                }
+                case JsonTelemetryEventType.HeatmapPos:
+                {
+                    TelemetryHeatmapPosEvent data = telemetryEvent.Data.ToObject<TelemetryHeatmapPosEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got quest added event, reason: {0}, pos:{1},{2},{3}", data.Reason, data.X, data.Y, data.Z);
+                    break;
+                }
+                case JsonTelemetryEventType.TutorVid:
+                {
+                    TelemetryTutorVidEvent data = telemetryEvent.Data.ToObject<TelemetryTutorVidEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got tutorial video event, video: {0}, title: {1}",
+                        data.Video, data.Title);
+                    break;
+                }
+                case JsonTelemetryEventType.LevelHacked:
+                {
+                    TelemetryLevelHackedEvent data = telemetryEvent.Data.ToObject<TelemetryLevelHackedEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got level hacked event, level id: {0}",
+                        data.LevelId);
+                    break;
+                }
+                case JsonTelemetryEventType.PlayerScore:
+                {
+                    TelemetryPlayerScoreEvent data = telemetryEvent.Data.ToObject<TelemetryPlayerScoreEvent>()!;
+                    TelemetryPlayerScoreEventCustomData customData =
+                        telemetryEvent.Data.ToObject<TelemetryPlayerScoreEventCustomData>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got player score event, score: {0}, highest mult: {1}, deaths: {2}", data.Score,
+                        customData.HighestMult, customData.Deaths);
+                    break;
+                }
+                case JsonTelemetryEventType.CharacterType:
+                {
+                    TelemetryCharacterTypeEvent data = telemetryEvent.Data.ToObject<TelemetryCharacterTypeEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got character type event, character: {0}",
+                        data.PlayerCharacter);
+                    break;
+                }
+                case JsonTelemetryEventType.ModalOS:
+                {
+                    TelemetryModalOsEvent data = telemetryEvent.Data.ToObject<TelemetryModalOsEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got modal os event, modal state: {0}",
+                        data.ModalState);
+                    break;
+                }
+                case JsonTelemetryEventType.PublishDLC:
+                {
+                    TelemetryPublishDlcEvent data = telemetryEvent.Data.ToObject<TelemetryPublishDlcEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got publish dlc event, action taken: {0}",
+                        data.ActionTaken);
+                    break;
+                }
+                case JsonTelemetryEventType.AnimationSelected:
+                {
+                    TelemetryAnimationSelectedEvent data =
+                        telemetryEvent.Data.ToObject<TelemetryAnimationSelectedEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got animation selected event, character: {0}, guid: {1}", data.Character, data.AnimationGuid);
+                    break;
+                }
+                case JsonTelemetryEventType.InvClick:
+                {
+                    TelemetryInventoryClickEvent data = telemetryEvent.Data.ToObject<TelemetryInventoryClickEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got inventory click event, action: {0}, type: {1}, hashes: {2}, guids: {3}", data.Action,
+                        data.Type, string.Join(',', data.Hashes), string.Join(',', data.Guids));
+                    break;
+                }
+                case JsonTelemetryEventType.NetworkJoinResult:
+                {
+                    TelemetryNetworkJoinResultEvent data =
+                        telemetryEvent.Data.ToObject<TelemetryNetworkJoinResultEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got network join result event, response: {0}",
+                        data.Response);
+                    break;
+                }
+                case JsonTelemetryEventType.BootStart:
+                {
+                    TelemetryBootStartEvent data = telemetryEvent.Data.ToObject<TelemetryBootStartEvent>()!;
+                    TelemetryBootStartEventCustomData? customData =
+                        telemetryEvent.CustomData?.ToObject<TelemetryBootStartEventCustomData>();
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got boot start event, build version: {0}",
+                        data.BuildVersion);
+                    break;
+                }
+                case JsonTelemetryEventType.HardwareProfile:
+                {
+                    TelemetryHardwareProfileEvent data = telemetryEvent.Data.ToObject<TelemetryHardwareProfileEvent>()!;
+                    TelemetryHardwareProfileEventCustomData customData =
+                        telemetryEvent.CustomData!.ToObject<TelemetryHardwareProfileEventCustomData>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got hardware profile event, language setting: {0}, camera type: {1}, headset type: {2}, console: {3}",
+                        data.LanguageSetting, data.CameraType, data.HeadsetType,
+                        customData?.Console ?? TelemetryHardwareProfileConsole.Ps3);
+                    break;
+                }
+                case JsonTelemetryEventType.MenuScreen:
+                {
+                    TelemetryMenuScreenEvent data = telemetryEvent.Data.ToObject<TelemetryMenuScreenEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got menu screen event, menu screen: {0}",
+                        data.MenuScreen);
+                    break;
+                }
+                case JsonTelemetryEventType.CommunityUI:
+                {
+                    TelemetryCommunityUiEvent data = telemetryEvent.Data.ToObject<TelemetryCommunityUiEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got community ui event, action: {0}",
+                        data.Action);
+                    break;
+                }
+                case JsonTelemetryEventType.AddToCart:
+                case JsonTelemetryEventType.RemoveFromCart:
+                case JsonTelemetryEventType.ItemDetailView:
+                {
+                    TelemetryCartInteractionEvent data = telemetryEvent.Data.ToObject<TelemetryCartInteractionEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got {0} event, sku: {1}", eventType, data.Sku);
+                    break;
+                }
+                case JsonTelemetryEventType.DiveInEvent:
+                {
+                    TelemetryDiveInEventEvent data = telemetryEvent.Data.ToObject<TelemetryDiveInEventEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got dive in event event, event: {0}", data.Event);
+                    break;
+                }
+                case JsonTelemetryEventType.Error:
+                {
+                    TelemetryErrorEvent data = telemetryEvent.Data.ToObject<TelemetryErrorEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got error event, error: {0}, code: {1}, message: {2}", data.ErrorType, data.ErrorCode,
+                        data.ErrorMessage);
+                    break;
+                }
+                case JsonTelemetryEventType.GenericMessage:
+                {
+                    TelemetryGenericMessageEvent data = telemetryEvent.Data.ToObject<TelemetryGenericMessageEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got generic message event, message: {0}",
+                        data.Message);
+                    break;
+                }
+                case JsonTelemetryEventType.ImportPhoto:
+                {
+                    TelemetryImportPhotoEvent data = telemetryEvent.Data.ToObject<TelemetryImportPhotoEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got import photo event, uid: {0}, hash: {1}, filename: {2}", data.Uid, data.Hash, data.Fname);
+                    break;
+                }
+                case JsonTelemetryEventType.LiveStreamStart: {
+                    TelemetryLiveStreamStartEvent data = telemetryEvent.Data.ToObject<TelemetryLiveStreamStartEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got live stream start event, name: {0}, stream service: {1}, id: {2}, interactive: {3}, command words: {4}",
+                        data.Name, data.StreamService, data.StreamId, data.Interactive ?? false,
+                        string.Join(',', data.InteractiveCommandWords ?? []));
+                    break;
+                }
+                case JsonTelemetryEventType.LiveStreamUpdate: {
+                    TelemetryLiveStreamUpdateEvent data = telemetryEvent.Data.ToObject<TelemetryLiveStreamUpdateEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got live stream start event, current viewers: {0}, id: {1}, interactive: {2}, command words: {3}",
+                        data.CurrentViewers, data.StreamId, data.Interactive ?? false,
+                        string.Join(',', data.InteractiveCommandWords ?? []));
+                    break;
+                }
+                case JsonTelemetryEventType.LiveStreamEnd: {
+                    TelemetryLiveStreamEndEvent data = telemetryEvent.Data.ToObject<TelemetryLiveStreamEndEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got live stream start event, current viewers: {0}, id: {1}, peak viewers: {2}, stream length: {3} secs",
+                        data.CurrentViewers, data.StreamId, data.PeakViewers, data.StreamLengthSecs);
+                    break;
+                }
+                case JsonTelemetryEventType.Hearted:
+                {
+                    TelemetryGenericHeartedEvent genericData =
+                        telemetryEvent.Data.ToObject<TelemetryGenericHeartedEvent>()!;
+                    switch (genericData.Type)
+                    {
+                        case TelemetryHeartedType.Level:
+                        case TelemetryHeartedType.Adventure:
+                        {
+                            TelemetrySlotHeartedEventData data =
+                                telemetryEvent.Data.ToObject<TelemetrySlotHeartedEventData>()!;
+
+                            context.Logger.LogInfo(RefreshContext.Telemetry,
+                                "Got slot hearted event ({5}), hearted: {0}, level: [{1}, {2}], level owner: {3}, meta: {4}",
+                                data.Hearted, data.Level[0], data.Level[1], data.LevelOwner, data.Meta, genericData.Type);
+                            break;
+                        }
+                        case TelemetryHeartedType.User:
+                        {
+                            TelemetryUserHeartedEventData data =
+                                telemetryEvent.Data.ToObject<TelemetryUserHeartedEventData>()!;
+                            
+                            context.Logger.LogInfo(RefreshContext.Telemetry,
+                                "Got user hearted event, hearted: {0}, meta: {1}",
+                                data.Hearted, data.Meta);
+                            break;
+                        }
+                        case TelemetryHeartedType.Playlist:
+                        {
+                            TelemetryPlaylistHeartedEventData data =
+                                telemetryEvent.Data.ToObject<TelemetryPlaylistHeartedEventData>()!;
+
+                            context.Logger.LogInfo(RefreshContext.Telemetry,
+                                "Got playlist hearted event, hearted: {0}, playlist: {1}",
+                                data.Hearted, data.Playlist);
+                            break;
+                        }
+                        case TelemetryHeartedType.Item:
+                        {
+                            TelemetryItemHeartedEventData data =
+                                telemetryEvent.Data.ToObject<TelemetryItemHeartedEventData>()!;
+                            
+                            context.Logger.LogInfo(RefreshContext.Telemetry,
+                                "Got item hearted event, hearted: {0}, uid: {1}, guid: {2}",
+                                data.Hearted, data.Uid, data.Guid);
+                            break;
+                        }
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
         return OK;
     }
 }

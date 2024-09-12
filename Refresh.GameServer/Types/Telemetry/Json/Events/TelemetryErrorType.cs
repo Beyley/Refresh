@@ -1,0 +1,17 @@
+using Newtonsoft.Json.Converters;
+
+namespace Refresh.GameServer.Types.Telemetry.Json.Events;
+
+[JsonConverter(typeof(StringEnumConverter))]
+public enum TelemetryErrorType
+{
+    GAME_DATA_BACKUP_CALLED_FAIL,
+    GAME_DATA_BACKUP_CALLED_COMPLETE,
+    GAME_DATA_DELETED,
+    CORRUPT_PROFILE_MESSAGE_DISPLAYED_ADVENTURE,
+    CORRUPT_PROFILE_MESSAGE_DISPLAYED_QUICK_LOAD,
+    EGMT_SAVEGAME_INFO_PATCHED,
+    MEMORY_STOMP_DETECTED,
+    BAD_DECORATION_DETECTED,
+    EGMT_PLAYER_TEXT_MESSAGE,
+}
