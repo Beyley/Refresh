@@ -506,7 +506,7 @@ public class TelemetryEndpoints : EndpointGroup
                         telemetryEvent.CustomData?.ToObject<TelemetryPlayerJoinEventCustomData>();
                     context.Logger.LogInfo(RefreshContext.Telemetry,
                         "Got player join event, online id: {0}, how matched: {1}", data.NpOnlineId,
-                        customData?.HowMatched ?? "unknown");
+                        customData?.HowMatched ?? TelemetryPlayerJoinHowMatched.UNKNOWN);
                     break;
                 }
                 case JsonTelemetryEventType.PlayerLeave:
@@ -516,7 +516,7 @@ public class TelemetryEndpoints : EndpointGroup
                         telemetryEvent.CustomData?.ToObject<TelemetryPlayerLeaveEventCustomData>();
                     context.Logger.LogInfo(RefreshContext.Telemetry,
                         "Got player leave event, online id: {0}, game time: {1}", data.NpOnlineId,
-                        customData?.GameTime ?? -1);
+                        customData?.GameTime ?? 0);
                     break;
                 }
                 case JsonTelemetryEventType.ResourceError:
@@ -714,6 +714,46 @@ public class TelemetryEndpoints : EndpointGroup
                     context.Logger.LogInfo(RefreshContext.Telemetry,
                         "Got live stream start event, current viewers: {0}, id: {1}, peak viewers: {2}, stream length: {3} secs",
                         data.CurrentViewers, data.StreamId, data.PeakViewers, data.StreamLengthSecs);
+                    break;
+                }
+                case JsonTelemetryEventType.NetworkResourceError:
+                {
+                    TelemetryNetworkResourceErrorEvent data = telemetryEvent.Data.ToObject<TelemetryNetworkResourceErrorEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got network resource error event, guid: {0}, hash: {1}, error type: {2}",
+                        data.Guid, data.Hash, data.NetworkErrorType);
+                    break;
+                }
+                case JsonTelemetryEventType.NetworkTimeout:
+                {
+                    TelemetryNetworkTimeoutEvent data = telemetryEvent.Data.ToObject<TelemetryNetworkTimeoutEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got network timeout event, client id: {0}, host id: {1}, error: {2}",
+                        data.ClientId, data.HostId, data.Error);
+                    break;
+                }
+                case JsonTelemetryEventType.ObjectiveComplete:
+                {
+                    TelemetryObjectiveCompleteEvent data = telemetryEvent.Data.ToObject<TelemetryObjectiveCompleteEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got objective complete event, quest: {0}, name: {1}, id: {2}",
+                        data.Quest, data.ObjctiveName, data.ObjectiveId);
+                    break;
+                }
+                case JsonTelemetryEventType.Ping:
+                {
+                    TelemetryPingEvent data = telemetryEvent.Data.ToObject<TelemetryPingEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got ping event, user: {0}, packet loss: {1}, bandwidth available: {2}kbps, bandwidth used: {3}kbps, bandwidth np available: {4}kbps",
+                        data.User, data.PacketLoss, data.RoundTripDelay, data.BandwidthAvailableKbps, data.BandwidthUsedKbps, data.BandwidthNetplayAvailableKbps);
+                    break;
+                }
+                case JsonTelemetryEventType.PlayNow:        
+                {
+                    TelemetryPlayNowEvent data = telemetryEvent.Data.ToObject<TelemetryPlayNowEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got play now event, slot: [{0}, {1}], source: {2}",
+                        data.Slot[0], data.Slot[1], data.Source);
                     break;
                 }
                 case JsonTelemetryEventType.Hearted:

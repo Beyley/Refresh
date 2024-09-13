@@ -1,8 +1,8 @@
 namespace Refresh.GameServer.Types.Telemetry.Json.Events;
 
 [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
-public class TelemetryPlayerLeaveEventCustomData
+public class TelemetryPlayNowEvent
 {
-    public uint GameTime { get; set; }
-    public int Number { get; set; }
+    public uint[] Slot { get; set; }
+    public TelemetryPlayNowSource Source { get; set; }
 }

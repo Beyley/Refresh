@@ -6,6 +6,12 @@ namespace Refresh.GameServer.Types.Telemetry.Json.Events;
 public class TelemetryNetworkProfileEvent
 {
     public NatType NatType { get; set; }
+    /// <summary>
+    /// Sent in the format of "%02x:%02x:%02x:%02x:%02x:%02x"
+    /// </summary>
     public string MacAddress { get; set; }
+    /// <summary>
+    /// Sent in the format of "up:%ld;down:%ld;"
+    /// </summary>
     public string NetworkQuality { get; set; }
 }

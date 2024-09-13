@@ -10,6 +10,7 @@ public enum TelemetryHardwareProfileHeadsetType
     // TODO: what are *actually* the values this can be on PS3? "Bluetooth" and "A2DP" seems wrong to be the only options.
     Bluetooth,
     A2DP,
+    Usb,
 }
 
 file class TelemetryHardwareProfileCameraTypeConverter : JsonConverter {
@@ -35,6 +36,7 @@ file class TelemetryHardwareProfileCameraTypeConverter : JsonConverter {
                 "ps4" => TelemetryHardwareProfileHeadsetType.Ps4,
                 "Bluetooth" => TelemetryHardwareProfileHeadsetType.Bluetooth,
                 "A2DP" => TelemetryHardwareProfileHeadsetType.A2DP,
+                "USB" => TelemetryHardwareProfileHeadsetType.Usb,
                 _ => throw new JsonSerializationException($"Unknown headset type {enumText}"),
             };
         }

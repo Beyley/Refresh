@@ -1,10 +1,11 @@
 namespace Refresh.GameServer.Types.Telemetry.Json.Events;
 
+[JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
 public class TelemetryNetworkJoinResultEvent
 {
-    [JsonProperty("reporter")] public string Reporter;
-    [JsonProperty("client_id")] public string ClientId;
-    [JsonProperty("host_id")] public string HostId;
-    [JsonProperty("response")] public string Response;
-    [JsonProperty("reason")] public string Reason;
+    public TelemetryNetworkJoinResultReporter Reporter;
+    public string ClientId;
+    public string HostId;
+    public TelemetryNetworkJoinResultResponse Response;
+    public TelemetryNetworkJoinResultReason Reason;
 }

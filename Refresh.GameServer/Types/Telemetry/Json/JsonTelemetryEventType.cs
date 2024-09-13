@@ -40,4 +40,9 @@ public enum JsonTelemetryEventType
     LiveStreamStart,
     LiveStreamUpdate,
     LiveStreamEnd,
+    NetworkResourceError,
+    NetworkTimeout,
+    ObjectiveComplete,
+    Ping,
+    PlayNow,
 }
