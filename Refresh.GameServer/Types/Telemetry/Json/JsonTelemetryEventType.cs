@@ -45,4 +45,5 @@ public enum JsonTelemetryEventType
     ObjectiveComplete,
     Ping,
     PlayNow,
+    QuestCompleted,
 }

@@ -756,6 +756,14 @@ public class TelemetryEndpoints : EndpointGroup
                         data.Slot[0], data.Slot[1], data.Source);
                     break;
                 }
+                case JsonTelemetryEventType.QuestCompleted:
+                {
+                    TelemetryQuestCompletedEvent data = telemetryEvent.Data.ToObject<TelemetryQuestCompletedEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got quest completed event, slot: [{0}, {1}], id: {2}, name: {3}",
+                        data.Slot[0], data.Slot[1], data.QuestId, data.QuestName);
+                    break;
+                }
                 case JsonTelemetryEventType.Hearted:
                 {
                     TelemetryGenericHeartedEvent genericData =
