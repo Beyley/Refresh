@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using Newtonsoft.Json.Converters;
 
 namespace Refresh.GameServer.Types.Telemetry.Json.Events;
@@ -5,7 +6,10 @@ namespace Refresh.GameServer.Types.Telemetry.Json.Events;
 [JsonConverter(typeof(StringEnumConverter))]
 public enum TelemetryBootStartType
 {
-    boot,
-    liveTile,
-    resume,
+    [EnumMember(Value = "boot")]
+    Boot,
+    [EnumMember(Value = "liveTile")]
+    LiveTile,
+    [EnumMember(Value = "resume")]
+    Resume,
 }

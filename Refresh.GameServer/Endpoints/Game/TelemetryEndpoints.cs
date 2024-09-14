@@ -1,11 +1,8 @@
 ﻿using Bunkum.Core;
 using Bunkum.Core.Endpoints;
-using Bunkum.Core.Endpoints.Debugging;
 using Bunkum.Core.Responses;
 using Bunkum.Listener.Protocol;
 using Bunkum.Protocols.Http;
-using NotEnoughLogs;
-using Refresh.Common.Extensions;
 using Refresh.GameServer.Importing;
 using Refresh.GameServer.Types.Roles;
 using Refresh.GameServer.Types.Telemetry;
@@ -506,7 +503,7 @@ public class TelemetryEndpoints : EndpointGroup
                         telemetryEvent.CustomData?.ToObject<TelemetryPlayerJoinEventCustomData>();
                     context.Logger.LogInfo(RefreshContext.Telemetry,
                         "Got player join event, online id: {0}, how matched: {1}", data.NpOnlineId,
-                        customData?.HowMatched ?? TelemetryPlayerJoinHowMatched.UNKNOWN);
+                        customData?.HowMatched ?? TelemetryPlayerJoinHowMatched.Unknown);
                     break;
                 }
                 case JsonTelemetryEventType.PlayerLeave:
@@ -762,6 +759,72 @@ public class TelemetryEndpoints : EndpointGroup
                     context.Logger.LogInfo(RefreshContext.Telemetry,
                         "Got quest completed event, slot: [{0}, {1}], id: {2}, name: {3}",
                         data.Slot[0], data.Slot[1], data.QuestId, data.QuestName);
+                    break;
+                }
+                case JsonTelemetryEventType.CommunitySearch:
+                {
+                    TelemetryCommunitySearchEvent data = telemetryEvent.Data.ToObject<TelemetryCommunitySearchEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got community search event, text: {0}",
+                        data.Text);
+                    break;
+                }
+                case JsonTelemetryEventType.StoreSearch:
+                {
+                    TelemetryStoreSearchEvent data = telemetryEvent.Data.ToObject<TelemetryStoreSearchEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got store search event, text: {0}",
+                        data.Text);
+                    break;
+                }
+                case JsonTelemetryEventType.SocialInteraction:
+                {
+                    TelemetrySocialInteractionEvent data = telemetryEvent.Data.ToObject<TelemetrySocialInteractionEvent>()!;
+                    TelemetrySocialInteractionEventCustomData customData = telemetryEvent.CustomData!.ToObject<TelemetrySocialInteractionEventCustomData>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got social interaction event, type: {0}, target: {1}, length: {2}",
+                        data.InteractionType, customData.Target, customData.Length);
+                    break;
+                }
+                case JsonTelemetryEventType.TrophyAchieve:
+                {
+                    TelemetryTrophyAchieveEvent data = telemetryEvent.Data.ToObject<TelemetryTrophyAchieveEvent>()!;
+                    TelemetryTrophyAchieveEventCustomData customData = telemetryEvent.CustomData!.ToObject<TelemetryTrophyAchieveEventCustomData>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry,
+                        "Got trophy achieve event, trophy id: {0}, trophy type: {1}, is first time: {2}, set version: {3}, localized name: {4}",
+                        data.TrophyId, data.TrophyType, data.IsFirstTime, data.TrophySetVersion, customData.Localized);
+                    break;
+                }
+                case JsonTelemetryEventType.SoundSelected:
+                {
+                    TelemetrySoundSelectedEvent data = telemetryEvent.Data.ToObject<TelemetrySoundSelectedEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got sound selected event, name: {0}",
+                        data.Name);
+                    break;
+                }
+                case JsonTelemetryEventType.StoreEnd:
+                {
+                    TelemetryStoreEndEvent data = telemetryEvent.Data.ToObject<TelemetryStoreEndEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got store end event, session id: {0}, duration secs: {1}, did purchase: {2}",
+                        data.StoreSessionId, data.DurationSecs, data.DidPurchase);
+                    break;
+                }
+                case JsonTelemetryEventType.StoreMenuScreen:
+                {
+                    TelemetryStoreMenuScreenEvent data = telemetryEvent.Data.ToObject<TelemetryStoreMenuScreenEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got store menu screen event, session id: {0}, screen id: {1}",
+                        data.StoreSessionId, data.ScreenId);
+                    break;
+                }
+                case JsonTelemetryEventType.StoreStart:
+                {
+                    TelemetryStoreStartEvent data = telemetryEvent.Data.ToObject<TelemetryStoreStartEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got store start event, session id: {0}, entry point: {1}",
+                        data.StoreSessionId, data.EntryPoint);
+                    break;
+                }
+                case JsonTelemetryEventType.TkPhoto:
+                {
+                    TelemetryTakePhotoEvent data = telemetryEvent.Data.ToObject<TelemetryTakePhotoEvent>()!;
+                    context.Logger.LogInfo(RefreshContext.Telemetry, "Got take photo event, action: {0}, game id: {1}",
+                        data.Action, data.GameId);
                     break;
                 }
                 case JsonTelemetryEventType.Hearted:

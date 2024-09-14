@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using Newtonsoft.Json.Converters;
 
 namespace Refresh.GameServer.Types.Telemetry.Json.Events;
@@ -5,18 +6,32 @@ namespace Refresh.GameServer.Types.Telemetry.Json.Events;
 [JsonConverter(typeof(StringEnumConverter))]
 public enum TelemetryNetworkJoinResultResponse
 {
-    ALLOW_JOIN,
-    DISALLOW,
-    TIMEOUT,
-    AUTO_REJECT,
-    CHAT,
-    WRONG_VERSION,
-    WRONG_BUILD_DATE,
-    NO_VACANCIES,
-    BUSY,
-    TUTORIAL,
-    POPPET_PAINT,
-    BLOCKED_PLAYER_IN_PARTY,
-    NO_NETWORK_MULTIPLAY,
-    UNKNOWN,
+    [EnumMember(Value = "ALLOW_JOIN")]
+    AllowJoin,
+    [EnumMember(Value = "DISALLOW")]
+    Disallow,
+    [EnumMember(Value = "TIMEOUT")]
+    Timeout,
+    [EnumMember(Value = "AUTO_REJECT")]
+    AutoReject,
+    [EnumMember(Value = "CHAT")]
+    Chat,
+    [EnumMember(Value = "WRONG_VERSION")]
+    WrongVersion,
+    [EnumMember(Value = "WRONG_BUILD_DATE")]
+    WrongBuildDate,
+    [EnumMember(Value = "NO_VACANCIES")]
+    NoVacancies,
+    [EnumMember(Value = "BUSY")]
+    Busy,
+    [EnumMember(Value = "TUTORIAL")]
+    Tutorial,
+    [EnumMember(Value = "POPPET_PAINT")]
+    PoppetPaint,
+    [EnumMember(Value = "BLOCKED_PLAYER_IN_PARTY")]
+    BlockedPlayerInParty,
+    [EnumMember(Value = "NO_NETWORK_MULTIPLAY")]
+    NoNetworkMultiplay,
+    [EnumMember(Value = "UNKNOWN")]
+    Unknown,
 }

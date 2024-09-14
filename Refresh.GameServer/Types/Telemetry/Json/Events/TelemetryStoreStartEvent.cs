@@ -1,7 +1,8 @@
 namespace Refresh.GameServer.Types.Telemetry.Json.Events;
 
 [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
-public class TelemetryHardwareProfileEventCustomData
+public class TelemetryStoreStartEvent
 {
-    public TelemetryHardwareProfileConsole Console { get; set; }
+    public string StoreSessionId { get; set; }
+    public string EntryPoint { get; set; }
 }

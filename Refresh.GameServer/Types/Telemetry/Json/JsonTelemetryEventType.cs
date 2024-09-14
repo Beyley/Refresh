@@ -46,4 +46,13 @@ public enum JsonTelemetryEventType
     Ping,
     PlayNow,
     QuestCompleted,
+    CommunitySearch,
+    StoreSearch,
+    SocialInteraction,
+    SoundSelected,
+    StoreEnd,
+    StoreMenuScreen,
+    StoreStart,
+    TkPhoto,
+    TrophyAchieve,
 }

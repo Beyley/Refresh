@@ -4,6 +4,6 @@ namespace Refresh.GameServer.Types.Telemetry.Json.Events;
 public class TelemetryResourceErrorEvent
 {
     public string Hash { get; set; }
-    public int Guid { get; set; }
-    public string ErrorType { get; set; }
+    public uint Guid { get; set; }
+    public TelemetryResourceErrorType ErrorType { get; set; }
 }
